@@ -1,0 +1,6 @@
+/botenv
+/smallcarbot/__pycache__
+/smallcarbot/utils/__pycache__
+/requirements.txt
+/yolov8n.pt
+/yolov8s.pt
