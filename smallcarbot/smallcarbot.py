@@ -3,7 +3,8 @@ import subprocess
 
 import telegram
 from telegram import ForceReply, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
+#from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 
 from smallcarbot.credentials import bot_token as TOKEN
 from smallcar.robot import SmallCar
@@ -18,57 +19,81 @@ class SmallCarBot():
         self.src_path = os.path.abspath('smallcarbot/src')
 
     def run(self):
-        self.application = Application.builder().token(TOKEN).build()
+        self.updater = Updater(TOKEN)
+        self.application = self.updater.dispatcher
         self.application.add_handler(CommandHandler("start", self.start))
         self.application.add_handler(CommandHandler("ping", self.ping))
         self.application.add_handler(CommandHandler("help", self.help_command))
 
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_text_command))
-        self.application.add_handler(MessageHandler(filters.VOICE, self.get_voice_command))
+        self.application.add_handler(MessageHandler(Filters.text & ~Filters.command, self.text_command))
+        self.application.add_handler(MessageHandler(Filters.voice, self.voice_command))
 
-        self.application.run_polling()
+        self.updater.start_polling()
+        self.updater.idle()
 
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    def start(self, update: Update, _: CallbackContext) -> None:
         """Send a message when the command /start is issued."""
-        await update.message.reply_text(
+        update.message.reply_text(
             'This bot provides interface for small car manipulating, use /help for more information.',
             reply_markup=ForceReply(selective=True),
             )
-        await update.message.reply_photo(
-            photo= os.path.join(self.src_path, 'images', 'start_small_car.jpg'),
+        photo = open(os.path.join(self.src_path, 'images', 'start_small_car.jpg'), 'rb')
+        update.message.reply_photo(
+            photo=photo,
             caption='Small car is Waveshare JetBot based on Jetson Nano.',
             reply_markup=ForceReply(selective=True)
             )
 
-    async def ping(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    def ping(self, update: Update, _: CallbackContext) -> None:
         """Send a message when the command /ping is issued."""
-        await update.message.reply_text(
+        update.message.reply_text(
             'Hello there, the bot is ready for work!',
             reply_markup=ForceReply(selective=True),
             )
 
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    def help_command(self, update: Update, _: CallbackContext) -> None:
         """Send a message when the command /help is issued."""
-        await update.message.reply_text(
+        update.message.reply_text(
             'This command is in progress.',
             reply_markup=ForceReply(selective=True),
             )
 
-    async def get_text_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    def text_command(self, update: Update, _: CallbackContext) -> None:
         """Receives text commands."""
-        command = await update.message.reply_text(update.message.text)
+        command = update.message.text
+        command = command_processing.process_command(command)
+        if command is None:
+            update.message.reply_text(
+                f'Не могу обработать команду {raw_command}',
+                reply_markup=ForceReply(selective=True),
+                )
+        else:
+            result = self.robot.execute(command)
+            if result is None:
+                update.message.reply_text(
+                    f'Успешно выполнено!',
+                    reply_markup=ForceReply(selective=True),
+                    )
+            else:
+                photo = open(result, 'rb')
+                update.message.reply_photo(
+                    photo=photo,
+                    reply_markup=ForceReply(selective=True)
+                    )
 
 
-    async def get_voice_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    def voice_command(self, update: Update, _: CallbackContext) -> None:
         """Receives voice commands."""
-        voice_info = await context.bot.get_file(update.message.voice.file_id)
-        voice = await self.bot.getFile(voice_info)
+        voice_info = context.bot.get_file(update.message.voice.file_id)
+        voice = self.bot.getFile(voice_info)
         with open('smallcarbot/tmp/voice.ogg', 'wb') as voice_file:
-            await voice.download_to_memory(voice_file)
+            voice.download_to_memory(voice_file)
 
         subprocess.call(['ffmpeg', '-i', 'smallcarbot/tmp/voice.ogg', 'smallcarbot/tmp/voice.wav', '-y'])
 
-        command = await self.recodnize_audio()
+        command = self.recodnize_audio()
+        result = self.process_command(command)
+        print(result)
 
         # await update.message.reply_text(
         #     command,
@@ -84,22 +109,22 @@ class SmallCarBot():
 
         return recognizer.recognize_google(audio, language="ru-RU")
 
-    async def process_command(self, raw_command, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        command = await command_processing(command)
+    def process_command(self, raw_command, update: Update, _: CallbackContext):
+        command = command_processing(command)
         if command is None:
-            await update.message.reply_text(
+            update.message.reply_text(
                 f'Не могу обработать команду {raw_command}',
                 reply_markup=ForceReply(selective=True),
                 )
         else:
             result = self.robot.execute(command)
             if result is None:
-                await update.message.reply_text(
+                update.message.reply_text(
                     f'Успешно выполнено!',
                     reply_markup=ForceReply(selective=True),
                     )
             else:
-                await update.message.reply_photo(
-                    photo= os.path.join(result),
+                update.message.reply_photo(
+                    photo=os.path.join(result),
                     reply_markup=ForceReply(selective=True)
                     )

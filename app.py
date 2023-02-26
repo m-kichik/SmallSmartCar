@@ -7,8 +7,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main() -> None:
-    from smallcarbot.utils.image_processing import detect
-    detect('bus.jpg')
     bot = SmallCarBot()
     bot.run()
 

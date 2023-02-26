@@ -17,14 +17,15 @@ class SmallCar():
         self.camera = Camera.instance()
         self.movements = ['MoveFront', 'MoveBack', 'RotateRight', 'RotateLeft']
         self.movement_time_const = 10
-        self.rotate_time_const = 10
+        self.rotate_time_const = 0.1
         self.photo = ['Photo', 'Detect']
 
-    def execute(self, command, value=None):
-        if command in self.movements:
-            self.move(command, value)
-        elif command in self.photo:
-            self.photo(command)
+    def execute(self, command):
+        if command[0] in self.movements:
+            value = 0.1 if command[1] is None else command[1] 
+            return self.move(command[0], value)
+        elif command[0] in self.photo:
+            return self.process_photo(command[0])
 
     def move(self, command, value=0.1):
         if command == 'MoveFront':
@@ -48,15 +49,15 @@ class SmallCar():
             self.robot.stop()
             return None
 
-    def photo(self, command):
+    def process_photo(self, command):
         image = self.camera.value
         image = np.array(image)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_path = os.path.abspath('smallcar/tmp/cam.jpg')
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_path = os.path.abspath('smallcarbot/tmp/cam.jpg')
         cv2.imwrite(image_path, image)
         if command == 'Detect':
             subprocess.call([
-                'python', 'smallcarbot/tools/detect.py', f'{image_path}',
+                'python', 'smallcarbot/utils/detect.py', f'{image_path}',
                 '"smallcar/tmp/"', '--model', 'yolov8n.pt'
                 ])
         return image_path
