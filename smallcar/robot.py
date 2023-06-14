@@ -16,8 +16,8 @@ class SmallCar():
         self.robot = Robot()
         self.camera = Camera.instance()
         self.movements = ['MoveFront', 'MoveBack', 'RotateRight', 'RotateLeft']
-        self.movement_time_const = 10
-        self.rotate_time_const = 0.1
+        self.movement_time_const = 50
+        self.rotate_time_const = 10
         self.photo = ['Photo', 'Detect']
 
     def execute(self, command):
@@ -31,12 +31,12 @@ class SmallCar():
         if command == 'MoveFront':
             self.robot.forward(0.1)
             time.sleep(self.movement_time_const * value)
-            self.robot.stop
+            self.robot.stop()
             return None
         if command == 'MoveBack':
             self.robot.backward(0.1)
             time.sleep(self.movement_time_const * value)
-            self.robot.stop
+            self.robot.stop()
             return None
         if command == 'RotateRight':
             self.robot.right(0.1)

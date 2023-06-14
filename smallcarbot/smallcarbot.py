@@ -60,8 +60,8 @@ class SmallCarBot():
 
     def text_command(self, update: Update, _: CallbackContext) -> None:
         """Receives text commands."""
-        command = update.message.text
-        command = command_processing.process_command(command)
+        raw_command = update.message.text
+        command = command_processing.process_command(raw_command)
         if command is None:
             update.message.reply_text(
                 f'Не могу обработать команду {raw_command}',
@@ -82,38 +82,27 @@ class SmallCarBot():
                     )
 
 
-    def voice_command(self, update: Update, _: CallbackContext) -> None:
+    def voice_command(self, update: Update, context: CallbackContext) -> None:
         """Receives voice commands."""
         voice_info = context.bot.get_file(update.message.voice.file_id)
         voice = self.bot.getFile(voice_info)
-        with open('smallcarbot/tmp/voice.ogg', 'wb') as voice_file:
-            voice.download_to_memory(voice_file)
+        voice_file = 'smallcarbot/tmp/voice.ogg'
+        voice.download(voice_file)
 
         subprocess.call(['ffmpeg', '-i', 'smallcarbot/tmp/voice.ogg', 'smallcarbot/tmp/voice.wav', '-y'])
 
-        command = self.recodnize_audio()
-        result = self.process_command(command)
-        print(result)
+        command = self.recognize_audio()
 
-        # await update.message.reply_text(
-        #     command,
-        #     reply_markup=ForceReply(selective=True),
-        # )
+        update.message.reply_text(
+            f'Выполняю команду "{command.lower()}"',
+            reply_markup=ForceReply(selective=True),
+            )
 
-    def recognize_audio(self):
-        """Recognizes voice commands."""
-        recognizer = speech_recognition.Recognizer()
+        command = command_processing.process_command(command)
 
-        with speech_recognition.AudioFile('/home/rito4ka/dev/SmallSmartCar/smallcarbot/tmp/voice.wav') as source:
-            audio = recognizer.record(source)
-
-        return recognizer.recognize_google(audio, language="ru-RU")
-
-    def process_command(self, raw_command, update: Update, _: CallbackContext):
-        command = command_processing(command)
         if command is None:
             update.message.reply_text(
-                f'Не могу обработать команду {raw_command}',
+                f'Не могу обработать команду {command}',
                 reply_markup=ForceReply(selective=True),
                 )
         else:
@@ -124,7 +113,23 @@ class SmallCarBot():
                     reply_markup=ForceReply(selective=True),
                     )
             else:
-                update.message.reply_photo(
-                    photo=os.path.join(result),
+               photo = open(result, 'rb')
+               update.message.reply_photo(
+                    photo=photo,
                     reply_markup=ForceReply(selective=True)
                     )
+
+        # await update.message.reply_text(
+        #     command,
+        #     reply_markup=ForceReply(selective=True),
+        # )
+
+    def recognize_audio(self):
+        """Recognizes voice commands."""
+        recognizer = speech_recognition.Recognizer()
+
+        with speech_recognition.AudioFile('smallcarbot/tmp/voice.wav') as source:
+            audio = recognizer.record(source)
+
+        return recognizer.recognize_google(audio, language="ru-RU")
+
