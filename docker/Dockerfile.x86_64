@@ -1,0 +1,25 @@
+FROM python:3.10.1
+
+# Install system dependencies for convinient development inside container
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    git \
+    curl \
+    wget \
+    build-essential \
+    sudo \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements.txt
+RUN python -m pip install -r requirements.txt
+
+# add user and his password
+ARG USER=docker_smallcar_desktop
+ARG UID=1000
+ARG GID=1000
+# default password
+ARG PW=user
+
+RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd && adduser ${USER} sudo
+WORKDIR /home/${USER}
+USER ${UID}:${GID}
