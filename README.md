@@ -1,4 +1,6 @@
 # SmallSmartCar
+![pixel_car](media/pixel_car.png)
+
 **Сборка десктопной версии (не на jetbot)**
 - Сборка контейнера:
 ```bash
