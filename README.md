@@ -1,5 +1,5 @@
 # SmallSmartCar
-![pixel_car](media/pixel_car.png)
+![pixel_car](media/car_and_apple.png)
 
 **Сборка десктопной версии (не на jetbot)**
 - Сборка контейнера:
