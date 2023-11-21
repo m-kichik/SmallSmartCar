@@ -4,8 +4,11 @@ FROM python:3.10.1
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     git \
     curl \
+    ffmpeg \
     wget \
     build-essential \
+    libsm6 \
+    libxext6 \
     sudo \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
