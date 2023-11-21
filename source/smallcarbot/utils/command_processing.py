@@ -23,6 +23,6 @@ def process_command(command):
         return ['Photo', None], "фотография"
     if 'детек' in command:
         return ['Detect', None], "детекция"
-    return None
+    return None, None
 
 

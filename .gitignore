@@ -2,4 +2,5 @@
 /source/smallcarbot/credentials.py
 /source/smallcarbot/tmp
 /source/smallcarbot/utils/__pycache__
+/source/smallcarbot/database/__pycache__
 /source/smallcar/__pycache__

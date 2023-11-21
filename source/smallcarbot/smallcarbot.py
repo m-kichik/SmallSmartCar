@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sqlite3
 
 import telegram
 
@@ -16,6 +17,7 @@ import speech_recognition
 
 from smallcarbot.credentials import bot_token as TOKEN
 from smallcarbot.utils import command_processing
+from smallcarbot.database import DataBase
 
 try:
     ON_BOARD = True
@@ -28,13 +30,29 @@ except ModuleNotFoundError:
 class SmallCarBot:
     def __init__(self):
         self.bot = telegram.Bot(TOKEN)
+
         if ON_BOARD:
             self.robot = SmallCar()
         else:
             self.robot = None
-        self.src_path = os.path.abspath("smallcarbot/src")
+
+        self.db_dir = os.path.abspath("database")
+        self.db = DataBase(os.path.join(self.db_dir, "commands.db"))
+
+        self.src_path = os.path.abspath("src")
+
+        self.tmp_dir = os.path.abspath("tmp")
+        self.raw_voice_file = os.path.join(self.tmp_dir, "voice.ogg")
+        self.voice_file = os.path.join(self.tmp_dir, "voice.wav")
 
     def run(self):
+        if not os.path.exists(self.db_dir):
+            os.mkdir(self.db_dir)
+        self.db.create()
+
+        if not os.path.exists(self.tmp_dir):
+            os.mkdir(self.tmp_dir)
+
         self.application = Application.builder().token(TOKEN).build()
         self.application.add_handler(CommandHandler("start", self.start))
         self.application.add_handler(CommandHandler("ping", self.ping))
@@ -71,6 +89,8 @@ class SmallCarBot:
         responce = "Hello there, the bot is ready for work!"
         if self.robot is None:
             responce += " But only in TEST mode."
+
+        print(update.effective_user)
         await update.message.reply_text(
             responce,
             reply_markup=ForceReply(selective=True),
@@ -86,28 +106,34 @@ class SmallCarBot:
     async def text_command(self, update: Update, _: CallbackContext) -> None:
         """Receives text commands."""
         raw_command = update.message.text
-        command, command_name_rus = command_processing.process_command(raw_command)
 
-        if command is None:
-            await update.message.reply_text(
-                f"Can not compute command {raw_command}",
-                reply_markup=ForceReply(selective=True),
-            )
-        else:
-            await self.process_command(command, command_name_rus, update)
+        try:
+            command, command_name_rus = command_processing.process_command(raw_command)
+
+            if command is None:
+                await update.message.reply_text(
+                    f"Can not compute command {raw_command}",
+                    reply_markup=ForceReply(selective=True),
+                )
+            else:
+                await self.process_command(command, command_name_rus, update)
+
+            self.db.add_command(update.effective_user.id, raw_command)
+
+        except Exception as e:
+            self.db.add_command(update.effective_user.id, raw_command, type(e).__name__)
 
     async def voice_command(self, update: Update, context: CallbackContext) -> None:
         """Receives voice commands."""
         voice = await context.bot.get_file(update.message.voice.file_id)
-        voice_file = "smallcarbot/tmp/voice.ogg"
-        await voice.download_to_drive(voice_file)
+        await voice.download_to_drive(self.raw_voice_file)
 
         subprocess.call(
             [
                 "ffmpeg",
                 "-i",
-                "smallcarbot/tmp/voice.ogg",
-                "smallcarbot/tmp/voice.wav",
+                self.raw_voice_file,
+                self.voice_file,
                 "-y",
             ]
         )
@@ -152,7 +178,7 @@ class SmallCarBot:
         """Recognizes voice commands."""
         recognizer = speech_recognition.Recognizer()
 
-        with speech_recognition.AudioFile("smallcarbot/tmp/voice.wav") as source:
+        with speech_recognition.AudioFile(self.voice_file) as source:
             audio = recognizer.record(source)
 
         return recognizer.recognize_google(audio, language="ru-RU")
