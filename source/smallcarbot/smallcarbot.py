@@ -90,7 +90,7 @@ class SmallCarBot:
 
         if command is None:
             await update.message.reply_text(
-                f"Не могу обработать команду {raw_command}",
+                f"Can not compute command {raw_command}",
                 reply_markup=ForceReply(selective=True),
             )
         else:
@@ -115,7 +115,7 @@ class SmallCarBot:
         command = self.recognize_audio()
 
         await update.message.reply_text(
-            f'Выполняю команду "{command.lower()}"',
+            f'Computing command "{command.lower()}"',
             reply_markup=ForceReply(selective=True),
         )
 
@@ -123,7 +123,7 @@ class SmallCarBot:
 
         if command is None:
             await update.message.reply_text(
-                f"Не могу обработать команду {command}",
+                f"Can not compute command {command}",
                 reply_markup=ForceReply(selective=True),
             )
         else:
@@ -132,14 +132,14 @@ class SmallCarBot:
     async def process_command(self, command, command_name, update: Update) -> None:
         if self.robot is None:
             await update.message.reply_text(
-                f"TEST: получена команда __{command_name}__.",
+                f"TEST: received command __{command_name}__.",
                 reply_markup=ForceReply(selective=True),
             )
         else:
             result = self.robot.execute(command)
             if result is None:
                 await update.message.reply_text(
-                    "Успешно выполнено!",
+                    "Well done!",
                     reply_markup=ForceReply(selective=True),
                 )
             else:
