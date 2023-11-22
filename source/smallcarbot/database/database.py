@@ -21,12 +21,12 @@ class DataBase():
         connection.commit()
         connection.close()
 
-    def add_command(self, uid:int, command:str, error:None):
+    def add_command(self, uid:int, command:str, error:str = None):
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
 
         cursor.execute('''
-            INSERT INTO commands (datetime, user_id, command, error) VALUES (?, ?, ?, ?, ?)
+            INSERT INTO commands (datetime, user_id, command, error) VALUES (?, ?, ?, ?)
         ''', (datetime.now().isoformat(), uid, command, error))
 
         connection.commit()
