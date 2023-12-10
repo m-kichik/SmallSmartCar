@@ -1,0 +1,9 @@
+pandas
+python-telegram-bot==20.6
+SpeechRecognition
+
+numpy
+opencv-python
+torch
+torchvision
+ultralytics

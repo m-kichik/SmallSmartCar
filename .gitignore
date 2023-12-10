@@ -4,3 +4,8 @@
 /source/smallcarbot/utils/__pycache__
 /source/smallcarbot/database/__pycache__
 /source/smallcar/__pycache__
+/botenv
+/botenv310
+*__pycache__
+/dist
+/jetbot.egg-info

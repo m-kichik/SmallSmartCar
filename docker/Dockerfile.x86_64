@@ -1,6 +1,5 @@
 FROM python:3.10.1
 
-# Install system dependencies for convinient development inside container
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     git \
     curl \
