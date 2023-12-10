@@ -15,23 +15,18 @@ from telegram.ext import (
 
 import speech_recognition
 
-from smallcarbot.credentials import bot_token as TOKEN
-from smallcarbot.utils import command_processing
-from smallcarbot.database import DataBase
+from .credentials import bot_token as TOKEN
+from .utils import command_processing
+from .database import DataBase
 
-try:
-    ON_BOARD = True
-    from smallcar.robot import SmallCar
-
-except ModuleNotFoundError:
-    ON_BOARD = False
+from smallcar.robot import SmallCar
 
 
 class SmallCarBot:
-    def __init__(self):
+    def __init__(self, on_board=False):
         self.bot = telegram.Bot(TOKEN)
 
-        if ON_BOARD:
+        if on_board:
             self.robot = SmallCar()
         else:
             self.robot = None
@@ -82,7 +77,7 @@ class SmallCarBot:
             await update.message.reply_text(
                 "Bot works in TEST mode (no JetBot connection).",
                 reply_markup=ForceReply(selective=True),
-                )
+            )
 
     async def ping(self, update: Update, _: CallbackContext) -> None:
         """Send a message when the command /ping is issued."""
@@ -90,7 +85,6 @@ class SmallCarBot:
         if self.robot is None:
             responce += " But only in TEST mode."
 
-        print(update.effective_user)
         await update.message.reply_text(
             responce,
             reply_markup=ForceReply(selective=True),
@@ -163,16 +157,23 @@ class SmallCarBot:
             )
         else:
             result = self.robot.execute(command)
-            if result is None:
+            print(result)
+            if result["move_command"]:
                 await update.message.reply_text(
                     "Well done!",
                     reply_markup=ForceReply(selective=True),
                 )
             else:
-                photo = open(result, "rb")
-                await update.message.reply_photo(
-                    photo=photo, reply_markup=ForceReply(selective=True)
-                )
+                if result["image_path"] is not None:
+                    photo = open(result["image_path"], "rb")
+                    await update.message.reply_photo(
+                        photo=photo, reply_markup=ForceReply(selective=True)
+                    )
+                else:
+                    await update.message.reply_text(
+                        result["status"],
+                        reply_markup=ForceReply(selective=True),
+                    )
 
     def recognize_audio(self):
         """Recognizes voice commands."""
